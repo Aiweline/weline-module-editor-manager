@@ -2,7 +2,7 @@
 
 namespace Weline\EditorManager\Setup;
 
-use Weline\EditorManager\Model\BackendUserConfig;
+use Weline\Backend\Model\BackendUserConfig;
 use Weline\Framework\Setup\Data;
 use Weline\Framework\Setup\InstallInterface;
 
