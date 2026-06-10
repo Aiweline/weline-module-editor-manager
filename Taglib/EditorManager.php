@@ -3,12 +3,11 @@
 namespace Weline\EditorManager\Taglib;
 
 use Weline\Backend\Model\BackendUserConfig;
-use Weline\EditorManager\Cache\EditorManagerCacheFactory;
 use Weline\EditorManager\EditorManager\Local;
 use Weline\EditorManager\EditorManagerInterface;
 use Weline\Framework\App\Env;
 use Weline\Framework\App\Exception;
-use Weline\Framework\Cache\CacheInterface;
+use Weline\Framework\Cache\Contract\CachePoolInterface;
 use Weline\Framework\Manager\MessageManager;
 use Weline\Framework\Manager\ObjectManager;
 use Weline\Framework\System\File\Scan;
@@ -68,7 +67,7 @@ class EditorManager implements TaglibInterface
             }
             # 检查是否有配置默认的编辑器管理器
             /**@var BackendUserConfig $BackendUserConfig */
-            $BackendUserConfig       = ObjectManager::getInstance(BackendUserConfig::class);
+            $BackendUserConfig = ObjectManager::getInstance(BackendUserConfig::class);
             $userConfigEditorManager = $BackendUserConfig->getConfig('editor-manager');
             if (empty($userConfigEditorManager)) {
                 $userConfigEditorManager = $BackendUserConfig->getDefaultConfig('editor-manager');
@@ -77,14 +76,14 @@ class EditorManager implements TaglibInterface
                 $userConfigEditorManager = 'local';
             }
             $cacheKey = json_encode(func_get_args()) . $userConfigEditorManager;
-            /**@var CacheInterface $cache */
-            $cache         = ObjectManager::getInstance(EditorManagerCacheFactory::class);
+            /**@var CachePoolInterface $cache */
+            $cache = w_cache('editor');
             $editorManager = $cache->get($cacheKey);
             if (!$editorManager) {
                 /**@var Scan $fileScan $ */
-                $fileScan       = ObjectManager::getInstance(Scan::class);
+                $fileScan = ObjectManager::getInstance(Scan::class);
                 $editorManagers = [];
-                $modules        = Env::getInstance()->getActiveModules();
+                $modules = Env::getInstance()->getActiveModules();
                 foreach ($modules as $module) {
                     $files = [];
                     $fileScan->globFile(
@@ -108,7 +107,7 @@ class EditorManager implements TaglibInterface
                     $editorManager = array_pop($editorManagers);
                 } else {
                     if (!isset($editorManagers[$userConfigEditorManager])) {
-                        ObjectManager::getInstance(MessageManager::class)->addWarning(__('配置的编辑器管理器不存在! 编辑器管理器名：%1', $userConfigEditorManager));
+                        ObjectManager::getInstance(MessageManager::class)->addWarning(__('配置的编辑器管理器不存在! 编辑器管理器名：%{1}', $userConfigEditorManager));
                         # 使用第一个编辑器管理器作为默认的编辑器管理器
                         /**@var \Weline\EditorManager\EditorManager $editorManager */
                         $editorManager = array_shift($editorManagers);
@@ -148,6 +147,15 @@ class EditorManager implements TaglibInterface
     public static function tag_self_close_with_attrs(): bool
     {
         return true;
+    }
+
+    /**
+     * 指定父标签，用于依赖管理
+     * @return string|null 父标签名称
+     */
+    public static function parent(): ?string
+    {
+        return null; // EditorManager标签没有依赖
     }
 
     public static function document(): string
